@@ -1,0 +1,143 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:  # 允许手动触发
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 检出代码
+        uses: actions/checkout@v4
+
+      - name: 🔧 设置 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 📦 安装 Cordova
+        run: |
+          npm install -g cordova
+          echo "Cordova version:"
+          cordova --version
+
+      - name: 🏗️ 安装 Android 平台
+        run: |
+          cordova platform add android@latest
+          echo "Platforms installed:"
+          cordova platform list
+
+      - name: 🔨 构建 APK（调试版）
+        run: |
+          cordova build android --debug
+          echo "Build complete!"
+
+      - name: 📁 查找 APK
+        id: find_apk
+        run: |
+          APK_PATH=$(find platforms/android -name "*.apk" 2>/dev/null | head -1)
+          if [ -z "$APK_PATH" ]; then
+            echo "No APK found, trying alternative locations..."
+            APK_PATH=$(find . -name "*.apk" 2>/dev/null | head -1)
+          fi
+          echo "APK found at: $APK_PATH"
+          echo "apk_path=$APK_PATH" >> $GITHUB_OUTPUT
+          # 复制到工作区根目录方便上传
+          cp "$APK_PATH" ./hypnosai-app.apk 2>/dev/null || true
+
+      - name: 📤 上传 APK 到 Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: HypnosAI-催眠-APK
+          path: ./hypnosai-app.apk
+          if-no-files-found: error
+
+      - name: 🏷️ 创建 Release（仅 tag 推送时）
+        if: startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ./hypnosai-app.apk
+          name: "HypnosAI 催眠 v${{ github.ref_name }}"
+          body: |
+            ## 🎧 HypnosAI 催眠助手
+
+            AI 驱动的个性化催眠体验应用。
+
+            ### ✨ 主要功能
+            - 🧠 个性化催眠倾向性测试
+            - 📝 AI 生成专属催眠脚本（Gemini）
+            - 🎙️ 高品质语音合成（ElevenLabs）
+            - 🔒 用户自持 API 密钥，数据完全本地
+
+            ### 📱 安装说明
+            1. 下载 APK 文件
+            2. 在 Android 设备上启用「未知来源」安装
+            3. 安装后在应用内设置页面填写您的 Gemini API 密钥
+            4. 开始享受专属催眠体验！
+
+            ### 🔑 API 密钥获取
+            - Gemini API: https://aistudio.google.com/apikey
+            - ElevenLabs API: https://elevenlabs.io/app/settings/api-keys
+
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # 构建发布版 APK（使用 signing key）
+  build-release:
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: 📥 检出代码
+        uses: actions/checkout@v4
+
+      - name: 🔧 设置 Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 📦 安装 Cordova
+        run: npm install -g cordova
+
+      - name: 🏗️ 添加 Android 平台
+        run: cordova platform add android@latest
+
+      - name: 🔑 创建签名密钥
+        run: |
+          keytool -genkeypair \
+            -alias hypnosai \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 36500 \
+            -keystore hypnosai.keystore \
+            -storepass hypnosai123 \
+            -keypass hypnosai123 \
+            -dname "CN=HypnosAI, OU=Dev, O=HypnosAI, L=Unknown, ST=Unknown, C=CN"
+
+      - name: 🔧 创建 release-signing.properties
+        run: |
+          cat > release-signing.properties << 'EOF'
+          storeFile=hypnosai.keystore
+          storePassword=hypnosai123
+          keyAlias=hypnosai
+          keyPassword=hypnosai123
+          EOF
+          cp release-signing.properties platforms/android/
+
+      - name: 🔨 构建 Release APK
+        run: cordova build android --release
+
+      - name: 📤 上传 Release APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: HypnosAI-催眠-Release-APK
+          path: |
+            platforms/android/app/build/outputs/apk/release/*.apk
+          if-no-files-found: warn

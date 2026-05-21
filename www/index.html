@@ -1,0 +1,641 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#0a0a14">
+    <title>HypnosAI 催眠</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- 星空背景画布 -->
+    <canvas id="starCanvas"></canvas>
+
+    <!-- 浮动Logo -->
+    <div class="floating-logo" id="floatingLogo">
+        <div class="logo-spiral">
+            <svg viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+                <path d="M50 10 C20 10 10 30 10 50 C10 75 35 90 50 90 C70 90 90 70 90 50 C90 25 60 10 50 10 Z" 
+                      fill="none" stroke="#7c3aed" stroke-width="2" stroke-dasharray="8 4" opacity="0.8"/>
+                <path d="M50 25 C35 25 25 35 25 50 C25 68 40 78 50 78 C63 78 75 65 75 50 C75 32 55 25 50 25 Z" 
+                      fill="none" stroke="#a78bfa" stroke-width="1.5" stroke-dasharray="5 5" opacity="0.6"/>
+                <circle cx="50" cy="50" r="4" fill="#c4b5fd" opacity="0.9"/>
+            </svg>
+        </div>
+    </div>
+
+    <!-- 主容器 -->
+    <div class="app-container" id="appContainer">
+
+        <!-- ===== 步骤0：欢迎页 ===== -->
+        <div class="screen active" id="screen-welcome">
+            <div class="card welcome-card">
+                <h1 class="app-title">🌙 HypnosAI 催眠</h1>
+                <p class="app-subtitle">AI 驱动的个性化催眠体验</p>
+                <p class="app-desc">通过科学的倾向性测试，结合先进 AI 技术，为您量身定制专属催眠脚本，帮助您实现深度放松、自我提升或行为改变。</p>
+                <div class="feature-list">
+                    <div class="feature-item">🧠 个性化倾向测试</div>
+                    <div class="feature-item">📝 AI 生成专属脚本</div>
+                    <div class="feature-item">🎙️ 高品质语音合成</div>
+                    <div class="feature-item">🔒 您的密钥，您的数据</div>
+                </div>
+                <button class="btn btn-primary btn-lg" onclick="navigateTo('info')">开始体验</button>
+                <button class="btn btn-outline btn-sm" onclick="openSettings()">⚙️ 设置 API 密钥</button>
+            </div>
+        </div>
+
+        <!-- ===== 步骤1：用户信息 -->
+        <div class="screen" id="screen-info">
+            <div class="card">
+                <div class="step-indicator">
+                    <span class="step-dot active"></span>
+                    <span class="step-dot"></span>
+                    <span class="step-dot"></span>
+                    <span class="step-dot"></span>
+                </div>
+                <h2 class="screen-title">📋 基本信息</h2>
+                <p class="screen-desc">请告诉我们一些基本信息，以便生成最适合您的催眠脚本。</p>
+
+                <div class="form-group">
+                    <label class="form-label">性别</label>
+                    <div class="option-group" id="genderOptions">
+                        <button class="option-btn" data-value="男" onclick="selectOption(this, 'genderOptions')">♂️ 男</button>
+                        <button class="option-btn" data-value="女" onclick="selectOption(this, 'genderOptions')">♀️ 女</button>
+                        <button class="option-btn" data-value="其他" onclick="selectOption(this, 'genderOptions')">🌈 其他</button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">信念系统偏好</label>
+                    <div class="option-group" id="beliefOptions">
+                        <button class="option-btn" data-value="科学" onclick="selectOption(this, 'beliefOptions')">🔬 科学理性</button>
+                        <button class="option-btn" data-value="灵性" onclick="selectOption(this, 'beliefOptions')">✨ 灵性探索</button>
+                        <button class="option-btn" data-value="无偏好" onclick="selectOption(this, 'beliefOptions')">⚖️ 无偏好</button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">催眠目标（可选，留空则由 AI 自由发挥）</label>
+                    <input type="text" class="form-input" id="customGoal" placeholder="例如：减轻焦虑、增强自信、改善睡眠...">
+                </div>
+
+                <div class="btn-row">
+                    <button class="btn btn-outline" onclick="navigateTo('welcome')">← 返回</button>
+                    <button class="btn btn-primary" onclick="validateAndGo('info', 'test')">下一步 →</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== 步骤2：倾向性测试 -->
+        <div class="screen" id="screen-test">
+            <div class="card">
+                <div class="step-indicator">
+                    <span class="step-dot done"></span>
+                    <span class="step-dot active"></span>
+                    <span class="step-dot"></span>
+                    <span class="step-dot"></span>
+                </div>
+                <h2 class="screen-title">🧠 倾向性测试</h2>
+                <p class="screen-desc">回答以下问题，帮助我们了解您的催眠倾向性。</p>
+                <div class="test-progress">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="testProgressFill"></div>
+                    </div>
+                    <span class="progress-text" id="testProgressText">1/10</span>
+                </div>
+
+                <div id="testContainer">
+                    <div class="test-question" id="testQuestion"></div>
+                    <div class="test-options" id="testOptions"></div>
+                </div>
+
+                <div class="btn-row">
+                    <button class="btn btn-outline" onclick="navigateTo('info')">← 返回</button>
+                    <button class="btn btn-outline" id="btnPrevQuestion" onclick="prevQuestion()" style="display:none">上一题</button>
+                    <button class="btn btn-primary" id="btnNextQuestion" onclick="nextQuestion()" disabled>选择答案</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== 步骤3：脚本参数 -->
+        <div class="screen" id="screen-params">
+            <div class="card">
+                <div class="step-indicator">
+                    <span class="step-dot done"></span>
+                    <span class="step-dot done"></span>
+                    <span class="step-dot active"></span>
+                    <span class="step-dot"></span>
+                </div>
+                <h2 class="screen-title">🎯 脚本参数</h2>
+
+                <div class="form-group">
+                    <label class="form-label">脚本类型</label>
+                    <div class="option-group" id="scriptTypeOptions">
+                        <button class="option-btn" data-value="引导式" onclick="selectOption(this, 'scriptTypeOptions')">🗣️ 引导式</button>
+                        <button class="option-btn" data-value="隐喻式" onclick="selectOption(this, 'scriptTypeOptions')">🌊 隐喻式</button>
+                        <button class="option-btn" data-value="渐进式放松" onclick="selectOption(this, 'scriptTypeOptions')">😌 渐进式放松</button>
+                        <button class="option-btn" data-value="自我肯定" onclick="selectOption(this, 'scriptTypeOptions')">💪 自我肯定</button>
+                        <button class="option-btn" data-value="视觉化" onclick="selectOption(this, 'scriptTypeOptions')">👁️ 视觉化</button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">语气风格</label>
+                    <div class="option-group" id="toneOptions">
+                        <button class="option-btn" data-value="温柔舒缓" onclick="selectOption(this, 'toneOptions')">🌿 温柔舒缓</button>
+                        <button class="option-btn" data-value="坚定有力" onclick="selectOption(this, 'toneOptions')">💎 坚定有力</button>
+                        <button class="option-btn" data-value="中性专业" onclick="selectOption(this, 'toneOptions')">📋 中性专业</button>
+                        <button class="option-btn" data-value="神秘深邃" onclick="selectOption(this, 'toneOptions')">🔮 神秘深邃</button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="form-label">语音合成</label>
+                    <div class="option-group" id="voiceOptions">
+                        <button class="option-btn" data-value="温柔女声" onclick="selectOption(this, 'voiceOptions')">🌸 温柔女声</button>
+                        <button class="option-btn" data-value="沉稳男声" onclick="selectOption(this, 'voiceOptions')">🎙️ 沉稳男声</button>
+                        <button class="option-btn" data-value="不生成语音" onclick="selectOption(this, 'voiceOptions')">🔇 仅文本</button>
+                    </div>
+                </div>
+
+                <div class="btn-row">
+                    <button class="btn btn-outline" onclick="navigateTo('test')">← 返回</button>
+                    <button class="btn btn-primary" onclick="validateAndGo('params', 'generate')">生成脚本 ✨</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- ===== 步骤4：生成结果 -->
+        <div class="screen" id="screen-generate">
+            <div class="card">
+                <div class="step-indicator">
+                    <span class="step-dot done"></span>
+                    <span class="step-dot done"></span>
+                    <span class="step-dot done"></span>
+                    <span class="step-dot active"></span>
+                </div>
+                <h2 class="screen-title">📝 您的专属催眠脚本</h2>
+
+                <!-- 测试结果摘要 -->
+                <div class="result-summary" id="resultSummary"></div>
+
+                <!-- 加载中 -->
+                <div class="loading-container" id="loadingContainer">
+                    <div class="spinner"></div>
+                    <p class="loading-text">AI 正在为您生成专属催眠脚本...</p>
+                </div>
+
+                <!-- 脚本显示 -->
+                <div class="script-display" id="scriptDisplay" style="display:none">
+                    <div class="script-content" id="scriptContent"></div>
+                </div>
+
+                <div class="btn-row" id="generateActions" style="display:none">
+                    <button class="btn btn-outline" onclick="navigateTo('params')">← 重新设置</button>
+                    <button class="btn btn-accent" id="btnPlayScript" onclick="openPlayer()">🎧 进入播放器</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== 全屏播放器（默认隐藏） ===== -->
+    <div class="player-overlay" id="playerOverlay">
+        <div class="player-spiral-bg">
+            <div class="spiral-ring ring-1"></div>
+            <div class="spiral-ring ring-2"></div>
+            <div class="spiral-ring ring-3"></div>
+            <div class="spiral-ring ring-4"></div>
+        </div>
+        <div class="player-content">
+            <h3 class="player-title">🎧 催眠播放器</h3>
+            <p class="player-script-name" id="playerScriptName"></p>
+            <div class="player-controls">
+                <button class="player-btn" id="btnPlayerPlay" onclick="togglePlayback()">▶️</button>
+                <button class="player-btn" onclick="stopPlayback()">⏹️</button>
+                <button class="player-btn" onclick="closePlayer()">✕</button>
+            </div>
+            <div class="player-progress">
+                <div class="player-progress-bar">
+                    <div class="player-progress-fill" id="playerProgressFill"></div>
+                </div>
+                <span class="player-time" id="playerTime">00:00 / 00:00</span>
+            </div>
+            <audio id="audioPlayer" style="display:none"></audio>
+        </div>
+    </div>
+
+    <!-- ===== 设置面板（模态） ===== -->
+    <div class="modal-overlay" id="settingsModal">
+        <div class="modal-card">
+            <h3 class="modal-title">⚙️ API 设置</h3>
+            <p class="modal-desc">请输入您自己的 API 密钥。您的密钥仅保存在本地设备中，不会上传到任何服务器。</p>
+
+            <div class="form-group">
+                <label class="form-label">Gemini API 密钥</label>
+                <input type="password" class="form-input" id="geminiApiKey" placeholder="AIza...">
+                <span class="form-hint">用于生成催眠脚本文本。<a href="#" onclick="openExternal('https://aistudio.google.com/apikey')">获取密钥</a></span>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">ElevenLabs API 密钥（可选）</label>
+                <input type="password" class="form-input" id="elevenlabsApiKey" placeholder="sk_...">
+                <span class="form-hint">用于语音合成，不填则仅生成文本。<a href="#" onclick="openExternal('https://elevenlabs.io/app/settings/api-keys')">获取密钥</a></span>
+            </div>
+
+            <div class="btn-row">
+                <button class="btn btn-outline" onclick="closeSettings()">取消</button>
+                <button class="btn btn-primary" onclick="saveSettings()">💾 保存</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast 通知 -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- 脚本引用 -->
+    <script src="js/app.js"></script>
+    <script>
+    // ==================== 全局状态 ====================
+    const STATE = {
+        currentScreen: 'welcome',
+        gender: '',
+        belief: '',
+        customGoal: '',
+        testAnswers: [],      // 每道题的得分 (0-4)
+        currentQuestion: 0,
+        scriptType: '',
+        tone: '',
+        voicePreference: '',
+        generatedScript: '',
+        audioBlob: null,
+        isPlaying: false
+    };
+
+    // ==================== 初始化 ====================
+    document.addEventListener('DOMContentLoaded', () => {
+        initStarfield();
+        loadSettings();
+        renderQuestion(STATE.currentQuestion);
+    });
+
+    // ==================== 星空背景 ====================
+    function initStarfield() {
+        const canvas = document.getElementById('starCanvas');
+        const ctx = canvas.getContext('2d');
+        let stars = [];
+        const STAR_COUNT = 150;
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        resize();
+        window.addEventListener('resize', resize);
+
+        for (let i = 0; i < STAR_COUNT; i++) {
+            stars.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                r: Math.random() * 1.5 + 0.5,
+                twinkle: Math.random() * Math.PI * 2,
+                speed: Math.random() * 0.02 + 0.005
+            });
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            stars.forEach(s => {
+                s.twinkle += s.speed;
+                const alpha = 0.3 + 0.7 * Math.abs(Math.sin(s.twinkle));
+                ctx.fillStyle = `rgba(200, 180, 255, ${alpha})`;
+                ctx.beginPath();
+                ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+                ctx.fill();
+            });
+            requestAnimationFrame(draw);
+        }
+        draw();
+    }
+
+    // ==================== 导航 ====================
+    function navigateTo(screen) {
+        STATE.currentScreen = screen;
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        const target = document.getElementById(`screen-${screen}`);
+        if (target) {
+            target.classList.add('active');
+            target.scrollTop = 0;
+        }
+        if (screen === 'test') {
+            renderQuestion(STATE.currentQuestion);
+        }
+        if (screen === 'generate') {
+            generateScript();
+        }
+        // 滚动到顶部
+        document.getElementById('appContainer').scrollTop = 0;
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // ==================== 选项选择 ====================
+    function selectOption(btn, groupId) {
+        const group = document.getElementById(groupId);
+        group.querySelectorAll('.option-btn').forEach(b => b.classList.remove('selected'));
+        btn.classList.add('selected');
+    }
+
+    function getSelectedValue(groupId) {
+        const group = document.getElementById(groupId);
+        const selected = group.querySelector('.option-btn.selected');
+        return selected ? selected.dataset.value : '';
+    }
+
+    // ==================== 表单验证与跳转 ====================
+    function validateAndGo(from, to) {
+        if (from === 'info') {
+            STATE.gender = getSelectedValue('genderOptions');
+            STATE.belief = getSelectedValue('beliefOptions');
+            STATE.customGoal = document.getElementById('customGoal').value.trim();
+            if (!STATE.gender) { showToast('请选择性别', 'warning'); return; }
+            if (!STATE.belief) { showToast('请选择信念偏好', 'warning'); return; }
+        }
+        if (from === 'params') {
+            STATE.scriptType = getSelectedValue('scriptTypeOptions');
+            STATE.tone = getSelectedValue('toneOptions');
+            STATE.voicePreference = getSelectedValue('voiceOptions');
+            if (!STATE.scriptType) { showToast('请选择脚本类型', 'warning'); return; }
+            if (!STATE.tone) { showToast('请选择语气风格', 'warning'); return; }
+            if (!STATE.voicePreference) { showToast('请选择语音合成选项', 'warning'); return; }
+        }
+        if (to === 'generate') {
+            // 检查 API 密钥
+            const keys = HypnosAI.getApiKeys();
+            if (!keys.gemini) {
+                showToast('请先在设置中填写 Gemini API 密钥', 'warning');
+                openSettings();
+                return;
+            }
+        }
+        navigateTo(to);
+    }
+
+    // ==================== 测试渲染 ====================
+    function renderQuestion(index) {
+        const questions = HypnosAI.getTestQuestions();
+        if (index >= questions.length) {
+            // 测试完成，跳转参数页
+            const result = HypnosAI.calculateTestScore(STATE.testAnswers);
+            STATE.testResult = result;
+            showToast(`测试完成！倾向性等级：${result.level}`, 'success');
+            navigateTo('params');
+            return;
+        }
+        STATE.currentQuestion = index;
+        const q = questions[index];
+        document.getElementById('testQuestion').innerHTML = `
+            <span class="question-number">${index + 1}.</span> ${q.question}
+        `;
+        const optionsHtml = q.options.map((opt, i) => `
+            <button class="test-option-btn ${STATE.testAnswers[index] === i ? 'selected' : ''}" 
+                    onclick="selectAnswer(${index}, ${i})">
+                ${opt}
+            </button>
+        `).join('');
+        document.getElementById('testOptions').innerHTML = optionsHtml;
+
+        // 更新进度条
+        const progress = ((index) / questions.length) * 100;
+        document.getElementById('testProgressFill').style.width = progress + '%';
+        document.getElementById('testProgressText').textContent = `${index + 1}/${questions.length}`;
+
+        // 按钮状态
+        document.getElementById('btnPrevQuestion').style.display = index > 0 ? 'inline-block' : 'none';
+        const nextBtn = document.getElementById('btnNextQuestion');
+        nextBtn.disabled = STATE.testAnswers[index] === undefined;
+        nextBtn.textContent = index >= questions.length - 1 ? '完成测试 ✨' : '下一题 →';
+    }
+
+    function selectAnswer(questionIndex, optionIndex) {
+        STATE.testAnswers[questionIndex] = optionIndex;
+        renderQuestion(questionIndex);
+        document.getElementById('btnNextQuestion').disabled = false;
+    }
+
+    function nextQuestion() {
+        if (STATE.testAnswers[STATE.currentQuestion] === undefined) {
+            showToast('请先选择一个答案', 'warning');
+            return;
+        }
+        STATE.currentQuestion++;
+        renderQuestion(STATE.currentQuestion);
+    }
+
+    function prevQuestion() {
+        if (STATE.currentQuestion > 0) {
+            STATE.currentQuestion--;
+            renderQuestion(STATE.currentQuestion);
+        }
+    }
+
+    // ==================== 脚本生成 ====================
+    async function generateScript() {
+        document.getElementById('loadingContainer').style.display = 'flex';
+        document.getElementById('scriptDisplay').style.display = 'none';
+        document.getElementById('generateActions').style.display = 'none';
+        document.getElementById('resultSummary').innerHTML = '';
+
+        // 显示测试摘要
+        if (STATE.testResult) {
+            document.getElementById('resultSummary').innerHTML = `
+                <div class="result-card">
+                    <span class="result-label">倾向性等级：</span>
+                    <span class="result-value level-${STATE.testResult.level}">${STATE.testResult.level}</span>
+                    <span class="result-percent">（${STATE.testResult.percentage}%）</span>
+                    <p class="result-advice">${STATE.testResult.advice}</p>
+                </div>
+            `;
+        }
+
+        try {
+            const keys = HypnosAI.getApiKeys();
+            const script = await HypnosAI.callGeminiAPI({
+                geminiKey: keys.gemini,
+                gender: STATE.gender,
+                belief: STATE.belief,
+                customGoal: STATE.customGoal || '',
+                testScore: STATE.testResult ? STATE.testResult.total : 20,
+                scriptType: STATE.scriptType,
+                tone: STATE.tone
+            });
+
+            STATE.generatedScript = script;
+            document.getElementById('loadingContainer').style.display = 'none';
+            document.getElementById('scriptDisplay').style.display = 'block';
+            document.getElementById('scriptContent').textContent = script;
+            document.getElementById('generateActions').style.display = 'flex';
+
+            // 如果需要语音合成
+            if (STATE.voicePreference !== '不生成语音' && keys.elevenlabs) {
+                showToast('正在合成语音...', 'info');
+                try {
+                    const audioBlob = await HypnosAI.callElevenLabsAPI(
+                        keys.elevenlabs,
+                        script,
+                        STATE.voicePreference === '沉稳男声' ? 'male' : 'female'
+                    );
+                    STATE.audioBlob = audioBlob;
+                    const url = URL.createObjectURL(audioBlob);
+                    document.getElementById('audioPlayer').src = url;
+                    showToast('语音合成完成！', 'success');
+                } catch (e) {
+                    console.error('语音合成失败:', e);
+                    showToast('语音合成失败，但脚本已生成', 'warning');
+                }
+            }
+
+        } catch (e) {
+            document.getElementById('loadingContainer').style.display = 'none';
+            document.getElementById('scriptContent').textContent = `生成失败：${e.message}\n\n请检查 API 密钥是否正确，以及网络连接是否正常。`;
+            document.getElementById('scriptDisplay').style.display = 'block';
+            document.getElementById('generateActions').style.display = 'flex';
+            document.getElementById('btnPlayScript').style.display = 'none';
+            showToast('脚本生成失败: ' + e.message, 'error');
+        }
+    }
+
+    // ==================== 播放器 ====================
+    function openPlayer() {
+        document.getElementById('playerOverlay').classList.add('active');
+        document.getElementById('playerScriptName').textContent = 
+            `${STATE.scriptType} · ${STATE.tone}`;
+        if (!STATE.audioBlob) {
+            showToast('没有可播放的语音文件', 'warning');
+        }
+    }
+
+    function closePlayer() {
+        stopPlayback();
+        document.getElementById('playerOverlay').classList.remove('active');
+    }
+
+    function togglePlayback() {
+        const audio = document.getElementById('audioPlayer');
+        const btn = document.getElementById('btnPlayerPlay');
+        if (!audio.src) {
+            showToast('没有可播放的音频', 'warning');
+            return;
+        }
+        if (audio.paused) {
+            audio.play();
+            btn.textContent = '⏸️';
+            STATE.isPlaying = true;
+        } else {
+            audio.pause();
+            btn.textContent = '▶️';
+            STATE.isPlaying = false;
+        }
+    }
+
+    function stopPlayback() {
+        const audio = document.getElementById('audioPlayer');
+        audio.pause();
+        audio.currentTime = 0;
+        document.getElementById('btnPlayerPlay').textContent = '▶️';
+        STATE.isPlaying = false;
+    }
+
+    // 音频进度更新
+    document.addEventListener('DOMContentLoaded', () => {
+        const audio = document.getElementById('audioPlayer');
+        audio.addEventListener('timeupdate', () => {
+            if (audio.duration) {
+                const pct = (audio.currentTime / audio.duration) * 100;
+                document.getElementById('playerProgressFill').style.width = pct + '%';
+                document.getElementById('playerTime').textContent = 
+                    `${formatTime(audio.currentTime)} / ${formatTime(audio.duration)}`;
+            }
+        });
+        audio.addEventListener('ended', () => {
+            document.getElementById('btnPlayerPlay').textContent = '▶️';
+            STATE.isPlaying = false;
+            document.getElementById('playerProgressFill').style.width = '0%';
+            document.getElementById('playerTime').textContent = '00:00 / 00:00';
+        });
+    });
+
+    function formatTime(seconds) {
+        const m = Math.floor(seconds / 60);
+        const s = Math.floor(seconds % 60);
+        return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    }
+
+    // ==================== 设置面板 ====================
+    function openSettings() {
+        document.getElementById('settingsModal').classList.add('active');
+        const keys = HypnosAI.getApiKeys();
+        document.getElementById('geminiApiKey').value = keys.gemini || '';
+        document.getElementById('elevenlabsApiKey').value = keys.elevenlabs || '';
+    }
+
+    function closeSettings() {
+        document.getElementById('settingsModal').classList.remove('active');
+    }
+
+    function saveSettings() {
+        const geminiKey = document.getElementById('geminiApiKey').value.trim();
+        const elevenlabsKey = document.getElementById('elevenlabsApiKey').value.trim();
+        HypnosAI.saveApiKeys(geminiKey, elevenlabsKey);
+        showToast('API 密钥已保存 ✅', 'success');
+        closeSettings();
+    }
+
+    function loadSettings() {
+        // API 密钥由 app.js 从 localStorage 加载
+        // HTML 加载时预填充设置面板（如果已打开）
+    }
+
+    // ==================== 外部链接 ====================
+    function openExternal(url) {
+        // Cordova 环境中使用 InAppBrowser
+        if (typeof cordova !== 'undefined' && cordova.InAppBrowser) {
+            cordova.InAppBrowser.open(url, '_system');
+        } else {
+            window.open(url, '_blank');
+        }
+    }
+
+    // ==================== Toast ====================
+    function showToast(message, type = 'info') {
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        toast.className = `toast toast-${type}`;
+        toast.textContent = message;
+        container.appendChild(toast);
+        setTimeout(() => {
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateY(-20px)';
+            setTimeout(() => toast.remove(), 300);
+        }, 2500);
+    }
+
+    // ==================== 键盘/返回键处理 ====================
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
+            if (document.getElementById('playerOverlay').classList.contains('active')) {
+                closePlayer();
+            } else if (document.getElementById('settingsModal').classList.contains('active')) {
+                closeSettings();
+            }
+        }
+    });
+
+    // 点击模态背景关闭
+    document.getElementById('settingsModal').addEventListener('click', function(e) {
+        if (e.target === this) closeSettings();
+    });
+    document.getElementById('playerOverlay').addEventListener('click', function(e) {
+        if (e.target === this) closePlayer();
+    });
+    </script>
+</body>
+</html>
