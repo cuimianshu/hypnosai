@@ -28,11 +28,11 @@ jobs:
           echo "Cordova version:"
           cordova --version
 
-      - name: 🏗️ 安装 Android 平台
-        run: |
-          cordova platform add android@latest
-          echo "Platforms installed:"
-          cordova platform list
+       - name: 🏗️ 安装 Android 平台
+         run: |
+           cordova platform add android@13.0.0
+           echo "Platforms installed:"
+           cordova platform list
 
       - name: 🔨 构建 APK（调试版）
         run: |
@@ -106,8 +106,8 @@ jobs:
       - name: 📦 安装 Cordova
         run: npm install -g cordova
 
-      - name: 🏗️ 添加 Android 平台
-        run: cordova platform add android@latest
+       - name: 🏗️ 添加 Android 平台
+         run: cordova platform add android@13.0.0
 
       - name: 🔑 创建签名密钥
         run: |
