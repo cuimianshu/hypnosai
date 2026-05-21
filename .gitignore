@@ -1,0 +1,8 @@
+node_modules/
+platforms/
+plugins/
+package-lock.json
+*.apk
+*.aab
+.gradle/
+.DS_Store
